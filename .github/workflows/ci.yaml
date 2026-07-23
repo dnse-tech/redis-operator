@@ -38,26 +38,31 @@ jobs:
 
   integration-test:
     name: Integration test
-    # Pinned to 22.04 (jammy): setup-minikube@v0.0.14 has no package for the
-    # 24.04 (noble) codename that ubuntu-latest now resolves to, and 404s.
-    # Revisit alongside a setup-minikube + k8s matrix bump.
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
     needs: [check, unit-test]
     strategy:
       matrix:
-        kubernetes: [1.24.16, 1.25.12, 1.26.7, 1.27.3 ]
+        # minikube v1.38.1 supports k8s 1.28-1.35; client-go v0.34 covers this
+        # band within the +/-1 skew. Newest (1.35.1) is minikube's default.
+        kubernetes: [1.33.13, 1.34.10, 1.35.1]
     steps:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
       - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
         with:
           go-version-file: go.mod
+      # driver=none runs the kubelet on the host and needs conntrack. The
+      # integration test talks to redis at 127.0.0.1, which relies on this
+      # host-networked driver. The container runtime is docker via cri-dockerd
+      # (installed by setup-minikube) — the runner's Docker is fully working,
+      # whereas its pre-installed containerd ships with the CRI plugin disabled.
       - name: Install conntrack
-        run: sudo apt-get install -y conntrack
-      - uses: medyagh/setup-minikube@v0.0.14
+        run: sudo apt-get update && sudo apt-get install -y conntrack
+      - uses: medyagh/setup-minikube@e9e035a86bbc3caea26a450bd4dbf9d0c453682e # v0.0.21
         with:
           kubernetes-version: ${{ matrix.kubernetes }}
-          minikube-version: 1.31.1
+          minikube-version: 1.38.1
           driver: none
+          container-runtime: docker
       - name: Add redisfailover CRD
         run: kubectl create -f manifests/databases.spotahome.com_redisfailovers.yaml
       - run: make ci-integration-test
