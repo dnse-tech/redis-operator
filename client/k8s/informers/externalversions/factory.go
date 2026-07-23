@@ -7,9 +7,9 @@ import (
 	sync "sync"
 	time "time"
 
-	versioned "github.com/spotahome/redis-operator/client/k8s/clientset/versioned"
-	internalinterfaces "github.com/spotahome/redis-operator/client/k8s/informers/externalversions/internalinterfaces"
-	redisfailover "github.com/spotahome/redis-operator/client/k8s/informers/externalversions/redisfailover"
+	versioned "github.com/dnse-tech/redis-operator/client/k8s/clientset/versioned"
+	internalinterfaces "github.com/dnse-tech/redis-operator/client/k8s/informers/externalversions/internalinterfaces"
+	redisfailover "github.com/dnse-tech/redis-operator/client/k8s/informers/externalversions/redisfailover"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"

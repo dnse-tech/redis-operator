@@ -25,4 +25,4 @@ RUN addgroup -g $gid rf && \
 
 
 USER rf
-WORKDIR /go/src/github.com/spotahome/redis-operator
+WORKDIR /go/src/github.com/dnse-tech/redis-operator

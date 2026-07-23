@@ -3,8 +3,8 @@
 package fake
 
 import (
-	v1 "github.com/spotahome/redis-operator/api/redisfailover/v1"
-	redisfailoverv1 "github.com/spotahome/redis-operator/client/k8s/clientset/versioned/typed/redisfailover/v1"
+	v1 "github.com/dnse-tech/redis-operator/api/redisfailover/v1"
+	redisfailoverv1 "github.com/dnse-tech/redis-operator/client/k8s/clientset/versioned/typed/redisfailover/v1"
 	gentype "k8s.io/client-go/gentype"
 )
 
