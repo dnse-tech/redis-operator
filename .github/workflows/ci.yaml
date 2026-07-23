@@ -6,13 +6,17 @@ on:
       - master
   pull_request:
 
+# Least-privilege default: jobs only read repo contents. Elevate per-job if needed.
+permissions:
+  contents: read
+
 jobs:
   check:
     name: Golang Check
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-go@v4
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
         with:
           go-version-file: go.mod
           cache: false
@@ -26,8 +30,8 @@ jobs:
     name: Unit test
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-go@v4
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
         with:
           go-version-file: go.mod
       - run: make ci-unit-test
@@ -43,8 +47,8 @@ jobs:
       matrix:
         kubernetes: [1.24.16, 1.25.12, 1.26.7, 1.27.3 ]
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-go@v4
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
         with:
           go-version-file: go.mod
       - name: Install conntrack
@@ -62,14 +66,15 @@ jobs:
     name: Chart testing
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
         with:
           fetch-depth: 0
 
       - name: Install Helm
-        uses: azure/setup-helm@v3
+        uses: azure/setup-helm@9bc31f4ebc9c6b171d7bfbaa5d006ae7abdb4310 # v5.0.1
         with:
           version: v3.7.2
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Helm test
         run: make helm-test
