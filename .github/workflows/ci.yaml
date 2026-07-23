@@ -50,24 +50,19 @@ jobs:
       - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
         with:
           go-version-file: go.mod
-      # driver=none runs the kubelet on the host, so it needs a host CRI
-      # (containerd) plus conntrack and crictl. The integration test talks to
-      # redis at 127.0.0.1, which relies on this host-networked driver.
-      - name: Install CRI tooling for driver=none
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y conntrack containerd
-          CRICTL_VERSION=v1.34.0
-          curl -fsSL "https://github.com/kubernetes-sigs/cri-tools/releases/download/${CRICTL_VERSION}/crictl-${CRICTL_VERSION}-linux-amd64.tar.gz" \
-            | sudo tar -C /usr/local/bin -xz
-          sudo systemctl enable --now containerd
-          crictl --version
+      # driver=none runs the kubelet on the host and needs conntrack. The
+      # integration test talks to redis at 127.0.0.1, which relies on this
+      # host-networked driver. The container runtime is docker via cri-dockerd
+      # (installed by setup-minikube) — the runner's Docker is fully working,
+      # whereas its pre-installed containerd ships with the CRI plugin disabled.
+      - name: Install conntrack
+        run: sudo apt-get update && sudo apt-get install -y conntrack
       - uses: medyagh/setup-minikube@e9e035a86bbc3caea26a450bd4dbf9d0c453682e # v0.0.21
         with:
           kubernetes-version: ${{ matrix.kubernetes }}
           minikube-version: 1.38.1
           driver: none
-          container-runtime: containerd
+          container-runtime: docker
       - name: Add redisfailover CRD
         run: kubectl create -f manifests/databases.spotahome.com_redisfailovers.yaml
       - run: make ci-integration-test
