@@ -34,7 +34,10 @@ jobs:
 
   integration-test:
     name: Integration test
-    runs-on: ubuntu-latest
+    # Pinned to 22.04 (jammy): setup-minikube@v0.0.14 has no package for the
+    # 24.04 (noble) codename that ubuntu-latest now resolves to, and 404s.
+    # Revisit alongside a setup-minikube + k8s matrix bump.
+    runs-on: ubuntu-22.04
     needs: [check, unit-test]
     strategy:
       matrix:
