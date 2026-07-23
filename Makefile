@@ -39,7 +39,7 @@ ifneq ($(shell git status --porcelain),)
 endif
 
 
-PROJECT_PACKAGE := github.com/spotahome/redis-operator
+PROJECT_PACKAGE := github.com/dnse-tech/redis-operator
 # kube-code-generator v0.8.0 (k8s 1.34 / bundled code-generator v1.34), digest-pinned.
 # amd64-only image; --platform linux/amd64 lets it run on arm64 hosts too.
 CODEGEN_IMAGE := ghcr.io/slok/kube-code-generator@sha256:0b7a150d0935ac794f505ed563771a6df024fd77fa1ea96b344a7d43e463476d
@@ -59,7 +59,7 @@ DEV_DIR := docker/development
 APP_DIR := docker/app
 
 # workdir
-WORKDIR := /go/src/github.com/spotahome/redis-operator
+WORKDIR := /go/src/github.com/dnse-tech/redis-operator
 
 # The default action of this Makefile is to build the development docker image
 .PHONY: default

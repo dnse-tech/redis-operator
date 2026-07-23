@@ -8,8 +8,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 
-	"github.com/spotahome/redis-operator/log"
-	"github.com/spotahome/redis-operator/metrics"
+	"github.com/dnse-tech/redis-operator/log"
+	"github.com/dnse-tech/redis-operator/metrics"
 )
 
 // ConfigMap the ServiceAccount service that knows how to interact with k8s to manage them

@@ -13,9 +13,9 @@ import (
 	kubernetes "k8s.io/client-go/kubernetes/fake"
 	kubetesting "k8s.io/client-go/testing"
 
-	"github.com/spotahome/redis-operator/log"
-	"github.com/spotahome/redis-operator/metrics"
-	"github.com/spotahome/redis-operator/service/k8s"
+	"github.com/dnse-tech/redis-operator/log"
+	"github.com/dnse-tech/redis-operator/metrics"
+	"github.com/dnse-tech/redis-operator/service/k8s"
 )
 
 var (

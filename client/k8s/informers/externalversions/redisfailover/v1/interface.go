@@ -3,7 +3,7 @@
 package v1
 
 import (
-	internalinterfaces "github.com/spotahome/redis-operator/client/k8s/informers/externalversions/internalinterfaces"
+	internalinterfaces "github.com/dnse-tech/redis-operator/client/k8s/informers/externalversions/internalinterfaces"
 )
 
 // Interface provides access to all the informers in this group version.

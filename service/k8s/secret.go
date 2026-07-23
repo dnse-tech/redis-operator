@@ -3,8 +3,8 @@ package k8s
 import (
 	"context"
 
-	"github.com/spotahome/redis-operator/log"
-	"github.com/spotahome/redis-operator/metrics"
+	"github.com/dnse-tech/redis-operator/log"
+	"github.com/dnse-tech/redis-operator/metrics"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"

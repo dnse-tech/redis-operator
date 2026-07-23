@@ -1,4 +1,4 @@
-module github.com/spotahome/redis-operator
+module github.com/dnse-tech/redis-operator
 
 go 1.25.12
 

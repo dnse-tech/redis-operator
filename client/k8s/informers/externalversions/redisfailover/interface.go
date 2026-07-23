@@ -3,8 +3,8 @@
 package redisfailover
 
 import (
-	internalinterfaces "github.com/spotahome/redis-operator/client/k8s/informers/externalversions/internalinterfaces"
-	v1 "github.com/spotahome/redis-operator/client/k8s/informers/externalversions/redisfailover/v1"
+	internalinterfaces "github.com/dnse-tech/redis-operator/client/k8s/informers/externalversions/internalinterfaces"
+	v1 "github.com/dnse-tech/redis-operator/client/k8s/informers/externalversions/redisfailover/v1"
 )
 
 // Interface provides access to each of this group's versions.

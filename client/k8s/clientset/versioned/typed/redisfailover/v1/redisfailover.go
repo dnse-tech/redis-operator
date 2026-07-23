@@ -5,8 +5,8 @@ package v1
 import (
 	context "context"
 
-	redisfailoverv1 "github.com/spotahome/redis-operator/api/redisfailover/v1"
-	scheme "github.com/spotahome/redis-operator/client/k8s/clientset/versioned/scheme"
+	redisfailoverv1 "github.com/dnse-tech/redis-operator/api/redisfailover/v1"
+	scheme "github.com/dnse-tech/redis-operator/client/k8s/clientset/versioned/scheme"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	types "k8s.io/apimachinery/pkg/types"
 	watch "k8s.io/apimachinery/pkg/watch"
