@@ -60,7 +60,7 @@ func TestPodServiceGetCreateOrUpdate(t *testing.T) {
 			errorOnGet:      kubeerrors.NewNotFound(schema.GroupResource{}, ""),
 			errorOnCreation: nil,
 			expActions: []kubetesting.Action{
-				newPodGetAction(testns, testPod.ObjectMeta.Name),
+				newPodGetAction(testns, testPod.Name),
 				newPodCreateAction(testns, testPod),
 			},
 			expErr: false,
@@ -72,7 +72,7 @@ func TestPodServiceGetCreateOrUpdate(t *testing.T) {
 			errorOnGet:      kubeerrors.NewNotFound(schema.GroupResource{}, ""),
 			errorOnCreation: errors.New("wanted error"),
 			expActions: []kubetesting.Action{
-				newPodGetAction(testns, testPod.ObjectMeta.Name),
+				newPodGetAction(testns, testPod.Name),
 				newPodCreateAction(testns, testPod),
 			},
 			expErr: true,
@@ -84,7 +84,7 @@ func TestPodServiceGetCreateOrUpdate(t *testing.T) {
 			errorOnGet:      nil,
 			errorOnCreation: nil,
 			expActions: []kubetesting.Action{
-				newPodGetAction(testns, testPod.ObjectMeta.Name),
+				newPodGetAction(testns, testPod.Name),
 				newPodUpdateAction(testns, testPod),
 			},
 			expErr: false,

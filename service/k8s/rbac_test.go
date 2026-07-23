@@ -66,7 +66,7 @@ func TestRBACServiceGetCreateOrUpdateRoleBinding(t *testing.T) {
 			errorOnGet:      kubeerrors.NewNotFound(schema.GroupResource{}, ""),
 			errorOnCreation: nil,
 			expActions: []kubetesting.Action{
-				newRBGetAction(testns, testRB.ObjectMeta.Name),
+				newRBGetAction(testns, testRB.Name),
 				newRBCreateAction(testns, testRB),
 			},
 			expErr: false,
@@ -78,7 +78,7 @@ func TestRBACServiceGetCreateOrUpdateRoleBinding(t *testing.T) {
 			errorOnGet:      kubeerrors.NewNotFound(schema.GroupResource{}, ""),
 			errorOnCreation: errors.New("wanted error"),
 			expActions: []kubetesting.Action{
-				newRBGetAction(testns, testRB.ObjectMeta.Name),
+				newRBGetAction(testns, testRB.Name),
 				newRBUpdateAction(testns, testRB),
 			},
 			expErr: true,
@@ -90,7 +90,7 @@ func TestRBACServiceGetCreateOrUpdateRoleBinding(t *testing.T) {
 			errorOnGet:      nil,
 			errorOnCreation: nil,
 			expActions: []kubetesting.Action{
-				newRBGetAction(testns, testRB.ObjectMeta.Name),
+				newRBGetAction(testns, testRB.Name),
 				newRBUpdateAction(testns, testRB),
 			},
 			expErr: false,
@@ -110,7 +110,7 @@ func TestRBACServiceGetCreateOrUpdateRoleBinding(t *testing.T) {
 			errorOnGet:      nil,
 			errorOnCreation: nil,
 			expActions: []kubetesting.Action{
-				newRBGetAction(testns, testRB.ObjectMeta.Name),
+				newRBGetAction(testns, testRB.Name),
 				newRBDeleteAction(testns, testRB.Name),
 				newRBCreateAction(testns, testRB),
 			},

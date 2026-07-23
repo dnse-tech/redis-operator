@@ -1,0 +1,13 @@
+version: "2"
+
+run:
+  timeout: 3m
+
+# Standard linter set (errcheck, govet, ineffassign, staticcheck, unused).
+linters:
+  default: standard
+
+# goimports is a formatter in golangci-lint v2 (it was `-E goimports` under v1).
+formatters:
+  enable:
+    - goimports

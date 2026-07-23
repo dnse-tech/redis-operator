@@ -910,8 +910,8 @@ func TestUpdate(t *testing.T) {
 				mrfc.On("GetRedisesSlavesPods", rf).Once().Return(replicas, nil)
 
 				for _, pod := range test.pods {
-					mrfc.On("GetRedisRevisionHash", pod.pod.ObjectMeta.Name, rf).Once().Return(pod.pod.ObjectMeta.Labels[appsv1.ControllerRevisionHashLabelKey], nil)
-					if pod.pod.ObjectMeta.Labels[appsv1.ControllerRevisionHashLabelKey] != test.ssVersion {
+					mrfc.On("GetRedisRevisionHash", pod.pod.ObjectMeta.Name, rf).Once().Return(pod.pod.Labels[appsv1.ControllerRevisionHashLabelKey], nil)
+					if pod.pod.Labels[appsv1.ControllerRevisionHashLabelKey] != test.ssVersion {
 						mrfh.On("DeletePod", pod.pod.ObjectMeta.Name, rf).Once().Return(nil)
 						if pod.master == false {
 							next = false
