@@ -40,7 +40,10 @@ endif
 
 
 PROJECT_PACKAGE := github.com/spotahome/redis-operator
-CODEGEN_IMAGE := ghcr.io/slok/kube-code-generator:v1.27.0
+# kube-code-generator v0.8.0 (k8s 1.34 / bundled code-generator v1.34), digest-pinned.
+# amd64-only image; --platform linux/amd64 lets it run on arm64 hosts too.
+CODEGEN_IMAGE := ghcr.io/slok/kube-code-generator@sha256:0b7a150d0935ac794f505ed563771a6df024fd77fa1ea96b344a7d43e463476d
+CRD_FILE := databases.spotahome.com_redisfailovers.yaml
 PORT := 9710
 
 # CMDs
@@ -180,24 +183,32 @@ ifndef DOCKER
 	@exit 1
 endif
 
-# Generate kubernetes code for types..
+# Generate deepcopy (in-place under api/) + the typed client (client/k8s).
+# The generator infers the client's import path from --go-gen-out, so it must
+# point at client/k8s. Clean first so removed sources don't leave stale files.
 .PHONY: update-codegen
 update-codegen:
-	@echo ">> Generating code for Kubernetes CRD types..."
-	docker run --rm -it \
-	-v $(PWD):/go/src/$(PROJECT_PACKAGE) \
-	-e PROJECT_PACKAGE=$(PROJECT_PACKAGE) \
-	-e CLIENT_GENERATOR_OUT=$(PROJECT_PACKAGE)/client/k8s \
-	-e APIS_ROOT=$(PROJECT_PACKAGE)/api \
-	-e GROUPS_VERSION="redisfailover:v1" \
-	-e GENERATION_TARGETS="deepcopy,client" \
-	$(CODEGEN_IMAGE)
+	@echo ">> Generating deepcopy + typed client..."
+	rm -rf ./client/k8s
+	docker run --rm --platform linux/amd64 \
+	-e GOTOOLCHAIN=auto \
+	-v $(PWD):/app \
+	$(CODEGEN_IMAGE) \
+	--apis-in ./api \
+	--go-gen-out ./client/k8s
 
+# Generate the CRD manifest, mirror it into the kustomize base, and sync the
+# Helm chart CRD from it — re-injecting the .Values.crds.annotations templating
+# block that codegen output can't carry (otherwise the chart CRD drifts stale).
+.PHONY: generate-crd
 generate-crd:
-	docker run -it --rm \
-	-v $(PWD):/go/src/$(PROJECT_PACKAGE) \
-	-e GO_PROJECT_ROOT=/go/src/$(PROJECT_PACKAGE) \
-	-e CRD_TYPES_PATH=/go/src/$(PROJECT_PACKAGE)/api \
-	-e CRD_OUT_PATH=/go/src/$(PROJECT_PACKAGE)/manifests \
-	$(CODEGEN_IMAGE) update-crd.sh
-	cp -f manifests/databases.spotahome.com_redisfailovers.yaml manifests/kustomize/base
+	@echo ">> Generating CRD manifest..."
+	docker run --rm --platform linux/amd64 \
+	-e GOTOOLCHAIN=auto \
+	-v $(PWD):/app \
+	$(CODEGEN_IMAGE) \
+	--apis-in ./api \
+	--crd-gen-out ./manifests
+	cp -f manifests/$(CRD_FILE) manifests/kustomize/base/$(CRD_FILE)
+	awk '/^  annotations:$$/ && !done { print; print "    {{- with .Values.crds.annotations }}"; print "    {{- toYaml . | nindent 4 }}"; print "    {{- end }}"; done=1; next } { print }' \
+	manifests/$(CRD_FILE) > charts/redisoperator/crds/$(CRD_FILE)
