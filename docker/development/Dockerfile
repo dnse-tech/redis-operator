@@ -1,6 +1,4 @@
-FROM golang:1.20-alpine
-
-ENV CODEGEN_VERSION="1.11.9"
+FROM golang:1.25.12-alpine
 
 RUN apk --no-cache add \
     bash \
@@ -8,17 +6,15 @@ RUN apk --no-cache add \
     g++ \
     openssl
 
-# Code generator stuff
-# Check: https://github.com/kubernetes/kubernetes/pull/57656
-RUN wget http://github.com/kubernetes/code-generator/archive/kubernetes-${CODEGEN_VERSION}.tar.gz && \
-    mkdir -p /go/src/k8s.io/code-generator/ && \
-    tar zxvf kubernetes-${CODEGEN_VERSION}.tar.gz --strip 1 -C /go/src/k8s.io/code-generator/ && \
-    mkdir -p /go/src/k8s.io/kubernetes/hack/boilerplate/ && \
-    touch /go/src/k8s.io/kubernetes/hack/boilerplate/boilerplate.go.txt
+# Code generation runs via the pinned CODEGEN_IMAGE (see Makefile), not an
+# embedded copy, so no in-image code-generator is fetched here.
 
-# Mock creator
+# Mock creator. mockery ships assets as mockery_<ver>_Linux_<arch>.tar.gz with
+# arch in Go form (arm64/x86_64); alpine's busybox `uname -m` returns aarch64,
+# so map it before building the URL.
 ARG MOCKERY_VERSION="2.9.6"
-RUN wget -c https://github.com/vektra/mockery/releases/download/v${MOCKERY_VERSION}/mockery_${MOCKERY_VERSION}_$(uname -o)_$(uname -m).tar.gz -O - | tar -xz -C /go/bin/
+RUN ARCH="$(uname -m)"; case "$ARCH" in aarch64) ARCH=arm64 ;; esac; \
+    wget -c "https://github.com/vektra/mockery/releases/download/v${MOCKERY_VERSION}/mockery_${MOCKERY_VERSION}_Linux_${ARCH}.tar.gz" -O - | tar -xz -C /go/bin/
 
 # Create user
 ARG uid=1000

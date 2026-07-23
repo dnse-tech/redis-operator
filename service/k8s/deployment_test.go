@@ -60,7 +60,7 @@ func TestDeploymentServiceGetCreateOrUpdate(t *testing.T) {
 			errorOnGet:          kubeerrors.NewNotFound(schema.GroupResource{}, ""),
 			errorOnCreation:     nil,
 			expActions: []kubetesting.Action{
-				newDeploymentGetAction(testns, testDeployment.ObjectMeta.Name),
+				newDeploymentGetAction(testns, testDeployment.Name),
 				newDeploymentCreateAction(testns, testDeployment),
 			},
 			expErr: false,
@@ -72,7 +72,7 @@ func TestDeploymentServiceGetCreateOrUpdate(t *testing.T) {
 			errorOnGet:          kubeerrors.NewNotFound(schema.GroupResource{}, ""),
 			errorOnCreation:     errors.New("wanted error"),
 			expActions: []kubetesting.Action{
-				newDeploymentGetAction(testns, testDeployment.ObjectMeta.Name),
+				newDeploymentGetAction(testns, testDeployment.Name),
 				newDeploymentCreateAction(testns, testDeployment),
 			},
 			expErr: true,
@@ -84,7 +84,7 @@ func TestDeploymentServiceGetCreateOrUpdate(t *testing.T) {
 			errorOnGet:          nil,
 			errorOnCreation:     nil,
 			expActions: []kubetesting.Action{
-				newDeploymentGetAction(testns, testDeployment.ObjectMeta.Name),
+				newDeploymentGetAction(testns, testDeployment.Name),
 				newDeploymentUpdateAction(testns, testDeployment),
 			},
 			expErr: false,

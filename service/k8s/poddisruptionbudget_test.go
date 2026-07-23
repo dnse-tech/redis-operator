@@ -58,7 +58,7 @@ func TestPodDisruptionBudgetServiceGetCreateOrUpdate(t *testing.T) {
 			errorOnGet:                   kubeerrors.NewNotFound(schema.GroupResource{}, ""),
 			errorOnCreation:              nil,
 			expActions: []kubetesting.Action{
-				newPodDisruptionBudgetGetAction(testns, testPodDisruptionBudget.ObjectMeta.Name),
+				newPodDisruptionBudgetGetAction(testns, testPodDisruptionBudget.Name),
 				newPodDisruptionBudgetCreateAction(testns, testPodDisruptionBudget),
 			},
 			expErr: false,
@@ -70,7 +70,7 @@ func TestPodDisruptionBudgetServiceGetCreateOrUpdate(t *testing.T) {
 			errorOnGet:                   kubeerrors.NewNotFound(schema.GroupResource{}, ""),
 			errorOnCreation:              errors.New("wanted error"),
 			expActions: []kubetesting.Action{
-				newPodDisruptionBudgetGetAction(testns, testPodDisruptionBudget.ObjectMeta.Name),
+				newPodDisruptionBudgetGetAction(testns, testPodDisruptionBudget.Name),
 				newPodDisruptionBudgetCreateAction(testns, testPodDisruptionBudget),
 			},
 			expErr: true,
@@ -82,7 +82,7 @@ func TestPodDisruptionBudgetServiceGetCreateOrUpdate(t *testing.T) {
 			errorOnGet:                   nil,
 			errorOnCreation:              nil,
 			expActions: []kubetesting.Action{
-				newPodDisruptionBudgetGetAction(testns, testPodDisruptionBudget.ObjectMeta.Name),
+				newPodDisruptionBudgetGetAction(testns, testPodDisruptionBudget.Name),
 				newPodDisruptionBudgetUpdateAction(testns, testPodDisruptionBudget),
 			},
 			expErr: false,

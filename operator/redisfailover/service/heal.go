@@ -44,21 +44,21 @@ func NewRedisFailoverHealer(k8sService k8s.Services, redisClient redis.Client, l
 }
 
 func (r *RedisFailoverHealer) setMasterLabelIfNecessary(namespace string, pod v1.Pod) error {
-	for labelKey, labelValue := range pod.ObjectMeta.Labels {
+	for labelKey, labelValue := range pod.Labels {
 		if labelKey == redisRoleLabelKey && labelValue == redisRoleLabelMaster {
 			return nil
 		}
 	}
-	return r.k8sService.UpdatePodLabels(namespace, pod.ObjectMeta.Name, generateRedisMasterRoleLabel())
+	return r.k8sService.UpdatePodLabels(namespace, pod.Name, generateRedisMasterRoleLabel())
 }
 
 func (r *RedisFailoverHealer) setSlaveLabelIfNecessary(namespace string, pod v1.Pod) error {
-	for labelKey, labelValue := range pod.ObjectMeta.Labels {
+	for labelKey, labelValue := range pod.Labels {
 		if labelKey == redisRoleLabelKey && labelValue == redisRoleLabelSlave {
 			return nil
 		}
 	}
-	return r.k8sService.UpdatePodLabels(namespace, pod.ObjectMeta.Name, generateRedisSlaveRoleLabel())
+	return r.k8sService.UpdatePodLabels(namespace, pod.Name, generateRedisSlaveRoleLabel())
 }
 
 func (r *RedisFailoverHealer) MakeMaster(ip string, rf *redisfailoverv1.RedisFailover) error {
