@@ -64,7 +64,7 @@ func TestStatefulSetServiceGetCreateOrUpdate(t *testing.T) {
 			errorOnGet:           kubeerrors.NewNotFound(schema.GroupResource{}, ""),
 			errorOnCreation:      nil,
 			expActions: []kubetesting.Action{
-				newStatefulSetGetAction(testns, testStatefulSet.ObjectMeta.Name),
+				newStatefulSetGetAction(testns, testStatefulSet.Name),
 				newStatefulSetCreateAction(testns, testStatefulSet),
 			},
 			expErr: false,
@@ -76,7 +76,7 @@ func TestStatefulSetServiceGetCreateOrUpdate(t *testing.T) {
 			errorOnGet:           kubeerrors.NewNotFound(schema.GroupResource{}, ""),
 			errorOnCreation:      errors.New("wanted error"),
 			expActions: []kubetesting.Action{
-				newStatefulSetGetAction(testns, testStatefulSet.ObjectMeta.Name),
+				newStatefulSetGetAction(testns, testStatefulSet.Name),
 				newStatefulSetCreateAction(testns, testStatefulSet),
 			},
 			expErr: true,
@@ -88,7 +88,7 @@ func TestStatefulSetServiceGetCreateOrUpdate(t *testing.T) {
 			errorOnGet:           nil,
 			errorOnCreation:      nil,
 			expActions: []kubetesting.Action{
-				newStatefulSetGetAction(testns, testStatefulSet.ObjectMeta.Name),
+				newStatefulSetGetAction(testns, testStatefulSet.Name),
 				newStatefulSetUpdateAction(testns, testStatefulSet),
 			},
 			expErr: false,

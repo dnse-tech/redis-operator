@@ -60,7 +60,7 @@ func TestServiceServiceGetCreateOrUpdate(t *testing.T) {
 			errorOnGet:       kubeerrors.NewNotFound(schema.GroupResource{}, ""),
 			errorOnCreation:  nil,
 			expActions: []kubetesting.Action{
-				newServiceGetAction(testns, testService.ObjectMeta.Name),
+				newServiceGetAction(testns, testService.Name),
 				newServiceCreateAction(testns, testService),
 			},
 			expErr: false,
@@ -72,7 +72,7 @@ func TestServiceServiceGetCreateOrUpdate(t *testing.T) {
 			errorOnGet:       kubeerrors.NewNotFound(schema.GroupResource{}, ""),
 			errorOnCreation:  errors.New("wanted error"),
 			expActions: []kubetesting.Action{
-				newServiceGetAction(testns, testService.ObjectMeta.Name),
+				newServiceGetAction(testns, testService.Name),
 				newServiceCreateAction(testns, testService),
 			},
 			expErr: true,
@@ -84,7 +84,7 @@ func TestServiceServiceGetCreateOrUpdate(t *testing.T) {
 			errorOnGet:       nil,
 			errorOnCreation:  nil,
 			expActions: []kubetesting.Action{
-				newServiceGetAction(testns, testService.ObjectMeta.Name),
+				newServiceGetAction(testns, testService.Name),
 				newServiceUpdateAction(testns, testService),
 			},
 			expErr: false,

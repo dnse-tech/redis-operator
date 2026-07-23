@@ -21,10 +21,10 @@ jobs:
           go-version-file: go.mod
           cache: false
       - name: golangci-lint
-        uses: golangci/golangci-lint-action@v3
+        # v9 is the first Node-24 major (v7/v8 are still Node 20); it runs golangci-lint v2.
+        uses: golangci/golangci-lint-action@ba0d7d2ec06a0ea1cb5fa41b2e4a3ab91d21278a # v9.3.0
         with:
-          version: v1.53
-          args: --timeout=15m
+          version: v2.12.0
 
   unit-test:
     name: Unit test
