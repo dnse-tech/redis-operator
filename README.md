@@ -187,6 +187,28 @@ By default, no service annotations will be applied to the Redis nor Sentinel ser
 
 In order to apply custom service Annotations, you can provide the `serviceAnnotations` option inside redis/sentinel spec. An example can be found in the [custom annotations example file](example/redisfailover/custom-annotations.yaml).
 
+### Pausing reconciliation
+
+Setting the `skip-reconcile` annotation to `"true"` on a `RedisFailover` makes the operator
+ignore that resource until the annotation is removed or set back to `"false"`. This is meant
+for migrations and maintenance windows, where the operator restoring the declared sentinel
+and replica counts would fight the operation in progress.
+
+```yaml
+apiVersion: databases.spotahome.com/v1
+kind: RedisFailover
+metadata:
+  name: redisfailover
+  annotations:
+    skip-reconcile: "true"
+spec:
+  # ...
+```
+
+While the annotation is set the operator neither ensures the owned resources nor runs its
+check-and-heal pass for that failover, so nothing repairs a broken master or replica until
+reconciliation is resumed. Other `RedisFailover` resources are unaffected.
+
 ### Control of label propagation.
 By default the operator will propagate all labels on the CRD down to the resources that it creates.  This can be problematic if the
 labels on the CRD are not fully under your own control (for example: being deployed by a gitops operator)

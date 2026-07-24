@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"regexp"
+	"strconv"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -19,6 +20,11 @@ import (
 const (
 	rfLabelManagedByKey = "app.kubernetes.io/managed-by"
 	rfLabelNameKey      = "redisfailovers.databases.spotahome.com/name"
+
+	// skipReconcileAnnotation pauses reconciliation for a single RedisFailover,
+	// so a migration or maintenance window can drive the topology by hand
+	// without the operator steering it back.
+	skipReconcileAnnotation = "skip-reconcile"
 )
 
 var (
@@ -57,6 +63,21 @@ func (r *RedisFailoverHandler) Handle(_ context.Context, obj runtime.Object) err
 	rf, ok := obj.(*redisfailoverv1.RedisFailover)
 	if !ok {
 		return fmt.Errorf("can't handle the received object: not a redisfailover")
+	}
+
+	// Checked before validation so a paused resource stays paused even while its
+	// spec is mid-edit.
+	if value, found := rf.Annotations[skipReconcileAnnotation]; found {
+		skip, err := strconv.ParseBool(value)
+		switch {
+		case err != nil:
+			r.logger.WithField("redisfailover", rf.Name).WithField("namespace", rf.Namespace).
+				Warningf("ignoring unparseable %s annotation %q, reconciling as usual", skipReconcileAnnotation, value)
+		case skip:
+			r.logger.WithField("redisfailover", rf.Name).WithField("namespace", rf.Namespace).
+				Infof("%s is set, skipping reconcile", skipReconcileAnnotation)
+			return nil
+		}
 	}
 
 	if err := rf.Validate(); err != nil {
