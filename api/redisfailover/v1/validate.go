@@ -3,6 +3,7 @@ package v1
 import (
 	"errors"
 	"fmt"
+	"regexp"
 	"strconv"
 )
 
@@ -10,10 +11,31 @@ const (
 	maxNameLength = 48
 )
 
+// Both halves of a command rename are written into redis.conf as
+// rename-command "<from>" "<to>". A quote, newline or space in either value
+// closes that directive early and lets the rest of the value be parsed as
+// further configuration, so restrict them to characters a command name can
+// actually contain.
+var (
+	commandRenameFromRegexp = regexp.MustCompile(`^[A-Za-z][A-Za-z0-9_-]*$`)
+	// An empty replacement is the documented way to disable a command, so it
+	// stays allowed.
+	commandRenameToRegexp = regexp.MustCompile(`^[A-Za-z0-9_-]*$`)
+)
+
 // Validate set the values by default if not defined and checks if the values given are valid
 func (r *RedisFailover) Validate() error {
 	if len(r.Name) > maxNameLength {
 		return fmt.Errorf("name length can't be higher than %d", maxNameLength)
+	}
+
+	for _, rename := range r.Spec.Redis.CustomCommandRenames {
+		if !commandRenameFromRegexp.MatchString(rename.From) {
+			return fmt.Errorf("customCommandRenames: %q is not a valid command name", rename.From)
+		}
+		if !commandRenameToRegexp.MatchString(rename.To) {
+			return fmt.Errorf("customCommandRenames: %q is not a valid replacement for command %q", rename.To, rename.From)
+		}
 	}
 
 	if r.Bootstrapping() {
