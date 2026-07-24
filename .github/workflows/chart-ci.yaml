@@ -1,0 +1,39 @@
+name: Chart CI
+
+# Only chart sources (and the script that lints them) can change the result of
+# `make helm-test`, so Go-only changes no longer trigger it.
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - 'charts/**'
+      - 'scripts/helm-tests.sh'
+      - '.github/workflows/chart-ci.yaml'
+  pull_request:
+    paths:
+      - 'charts/**'
+      - 'scripts/helm-tests.sh'
+      - '.github/workflows/chart-ci.yaml'
+
+# Least-privilege default: jobs only read repo contents. Elevate per-job if needed.
+permissions:
+  contents: read
+
+jobs:
+  chart-test:
+    name: Chart testing
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          fetch-depth: 0
+
+      - name: Install Helm
+        uses: azure/setup-helm@9bc31f4ebc9c6b171d7bfbaa5d006ae7abdb4310 # v5.0.1
+        with:
+          version: v3.7.2
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Helm test
+        run: make helm-test

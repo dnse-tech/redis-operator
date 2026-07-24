@@ -1,10 +1,38 @@
 name: CI
 
+# Scoped to changes that can affect the Go build/test result. Chart-only or
+# docs-only changes are covered by chart-ci.yaml / nothing, so they no longer
+# spend ~7 minutes on the integration matrix. GitHub Actions does not support
+# YAML anchors, so the path list is repeated for push and pull_request.
 on:
   push:
     branches:
       - master
+    paths:
+      - '**.go'
+      - 'go.mod'
+      - 'go.sum'
+      - '.golangci.yml'
+      - 'Makefile'
+      - 'manifests/**'
+      - 'mocks/**'
+      - 'test/**'
+      - 'docker/**'
+      - 'scripts/**'
+      - '.github/workflows/ci.yaml'
   pull_request:
+    paths:
+      - '**.go'
+      - 'go.mod'
+      - 'go.sum'
+      - '.golangci.yml'
+      - 'Makefile'
+      - 'manifests/**'
+      - 'mocks/**'
+      - 'test/**'
+      - 'docker/**'
+      - 'scripts/**'
+      - '.github/workflows/ci.yaml'
 
 # Least-privilege default: jobs only read repo contents. Elevate per-job if needed.
 permissions:
@@ -66,23 +94,6 @@ jobs:
       - name: Add redisfailover CRD
         run: kubectl create -f manifests/databases.spotahome.com_redisfailovers.yaml
       - run: make ci-integration-test
-
-  chart-test:
-    name: Chart testing
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
-        with:
-          fetch-depth: 0
-
-      - name: Install Helm
-        uses: azure/setup-helm@9bc31f4ebc9c6b171d7bfbaa5d006ae7abdb4310 # v5.0.1
-        with:
-          version: v3.7.2
-          token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Helm test
-        run: make helm-test
 
   govulncheck:
     name: govulncheck
