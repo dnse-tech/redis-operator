@@ -729,7 +729,7 @@ func createRedisExporterContainer(rf *redisfailoverv1.RedisFailover) corev1.Cont
 		Resources: resources,
 	}
 
-	redisEnv := getRedisEnv(rf)
+	redisEnv := getRedisExporterEnv(rf)
 	container.Env = append(container.Env, redisEnv...)
 
 	return container
@@ -1150,4 +1150,56 @@ func getRedisEnv(rf *redisfailoverv1.RedisFailover) []corev1.EnvVar {
 	}
 
 	return env
+}
+
+// getRedisExporterEnv builds the env injected into the redis exporter sidecar.
+// It mirrors getRedisEnv but skips the credential vars the user already set on
+// spec.redis.exporter.env: the operator's vars are appended after the user's,
+// and on duplicate names the last entry wins, so appending unconditionally
+// would silently override an explicitly configured user/password.
+func getRedisExporterEnv(rf *redisfailoverv1.RedisFailover) []corev1.EnvVar {
+	var env []corev1.EnvVar
+
+	env = append(env, corev1.EnvVar{
+		Name:  "REDIS_ADDR",
+		Value: fmt.Sprintf("redis://127.0.0.1:%[1]v", rf.Spec.Redis.Port),
+	})
+
+	env = append(env, corev1.EnvVar{
+		Name:  "REDIS_PORT",
+		Value: fmt.Sprintf("%[1]v", rf.Spec.Redis.Port),
+	})
+
+	if !envExists(rf.Spec.Redis.Exporter.Env, "REDIS_USER") {
+		env = append(env, corev1.EnvVar{
+			Name:  "REDIS_USER",
+			Value: "default",
+		})
+	}
+
+	if rf.Spec.Auth.SecretPath != "" && !envExists(rf.Spec.Redis.Exporter.Env, "REDIS_PASSWORD") {
+		env = append(env, corev1.EnvVar{
+			Name: "REDIS_PASSWORD",
+			ValueFrom: &corev1.EnvVarSource{
+				SecretKeyRef: &corev1.SecretKeySelector{
+					LocalObjectReference: corev1.LocalObjectReference{
+						Name: rf.Spec.Auth.SecretPath,
+					},
+					Key: "password",
+				},
+			},
+		})
+	}
+
+	return env
+}
+
+// envExists reports whether an env var with the given name is already present.
+func envExists(env []corev1.EnvVar, name string) bool {
+	for _, e := range env {
+		if e.Name == name {
+			return true
+		}
+	}
+	return false
 }

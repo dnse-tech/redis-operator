@@ -2254,6 +2254,144 @@ func TestRedisEnv(t *testing.T) {
 	}
 }
 
+func TestRedisExporterEnv(t *testing.T) {
+	default_port := int32(6379)
+	tests := []struct {
+		name        string
+		auth        string
+		exporterEnv []corev1.EnvVar
+		// expectedEnv is the full env of the exporter container, in order:
+		// user-provided env, then REDIS_ALIAS, then the operator-injected vars.
+		expectedEnv []corev1.EnvVar
+	}{
+		{
+			name: "operator defaults when user sets nothing",
+			auth: "redis-secret",
+			expectedEnv: []corev1.EnvVar{
+				redisAliasEnv(),
+				{
+					Name:  "REDIS_ADDR",
+					Value: fmt.Sprintf("redis://127.0.0.1:%[1]v", default_port),
+				},
+				{
+					Name:  "REDIS_PORT",
+					Value: fmt.Sprintf("%[1]v", default_port),
+				},
+				{
+					Name:  "REDIS_USER",
+					Value: "default",
+				},
+				{
+					Name: "REDIS_PASSWORD",
+					ValueFrom: &corev1.EnvVarSource{
+						SecretKeyRef: &corev1.SecretKeySelector{
+							LocalObjectReference: corev1.LocalObjectReference{
+								Name: "redis-secret",
+							},
+							Key: "password",
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "user REDIS_USER and REDIS_PASSWORD are retained, not overridden",
+			auth: "redis-secret",
+			exporterEnv: []corev1.EnvVar{
+				{Name: "REDIS_USER", Value: "monitoring"},
+				{Name: "REDIS_PASSWORD", Value: "s3cr3t"},
+			},
+			expectedEnv: []corev1.EnvVar{
+				{Name: "REDIS_USER", Value: "monitoring"},
+				{Name: "REDIS_PASSWORD", Value: "s3cr3t"},
+				redisAliasEnv(),
+				{
+					Name:  "REDIS_ADDR",
+					Value: fmt.Sprintf("redis://127.0.0.1:%[1]v", default_port),
+				},
+				{
+					Name:  "REDIS_PORT",
+					Value: fmt.Sprintf("%[1]v", default_port),
+				},
+			},
+		},
+		{
+			name: "only the user-set var is skipped, the other keeps its default",
+			auth: "",
+			exporterEnv: []corev1.EnvVar{
+				{Name: "REDIS_USER", Value: "monitoring"},
+			},
+			expectedEnv: []corev1.EnvVar{
+				{Name: "REDIS_USER", Value: "monitoring"},
+				redisAliasEnv(),
+				{
+					Name:  "REDIS_ADDR",
+					Value: fmt.Sprintf("redis://127.0.0.1:%[1]v", default_port),
+				},
+				{
+					Name:  "REDIS_PORT",
+					Value: fmt.Sprintf("%[1]v", default_port),
+				},
+			},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			assert := assert.New(t)
+
+			var env []corev1.EnvVar
+
+			rf := generateRF()
+			rf.Spec.Redis.Port = default_port
+			rf.Spec.Redis.Exporter.Enabled = true
+			rf.Spec.Redis.Exporter.Env = test.exporterEnv
+			if test.auth != "" {
+				rf.Spec.Auth.SecretPath = test.auth
+			}
+
+			ms := &mK8SService.Services{}
+			ms.On("CreateOrUpdatePodDisruptionBudget", namespace, mock.Anything).Once().Return(nil, nil)
+			ms.On("CreateOrUpdateStatefulSet", namespace, mock.Anything).Once().Run(func(args mock.Arguments) {
+				s := args.Get(1).(*appsv1.StatefulSet)
+				// containers[0] is redis, the exporter sidecar is appended after it.
+				env = s.Spec.Template.Spec.Containers[1].Env
+			}).Return(nil)
+
+			client := rfservice.NewRedisFailoverKubeClient(ms, log.Dummy, metrics.Dummy)
+			err := client.EnsureRedisStatefulset(rf, nil, []metav1.OwnerReference{})
+
+			assert.NoError(err)
+			assert.Equal(test.expectedEnv, env)
+			// A duplicate name would let the last entry win and silently shadow
+			// the user's value, which is the bug this guards against.
+			assert.Len(envNamed(env, "REDIS_USER"), 1)
+			assert.Len(envNamed(env, "REDIS_PASSWORD"), len(envNamed(test.expectedEnv, "REDIS_PASSWORD")))
+		})
+	}
+}
+
+func redisAliasEnv() corev1.EnvVar {
+	return corev1.EnvVar{
+		Name: "REDIS_ALIAS",
+		ValueFrom: &corev1.EnvVarSource{
+			FieldRef: &corev1.ObjectFieldSelector{
+				FieldPath: "metadata.name",
+			},
+		},
+	}
+}
+
+func envNamed(env []corev1.EnvVar, name string) []corev1.EnvVar {
+	var found []corev1.EnvVar
+	for _, e := range env {
+		if e.Name == name {
+			found = append(found, e)
+		}
+	}
+	return found
+}
+
 func TestRedisStartupProbe(t *testing.T) {
 	mode := int32(0744)
 	tests := []struct {
