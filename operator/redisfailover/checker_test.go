@@ -301,15 +301,24 @@ func TestCheckAndHeal(t *testing.T) {
 			mrfc := &mRFService.RedisFailoverCheck{}
 			mrfh := &mRFService.RedisFailoverHeal{}
 
+			// Normal CheckAndHeal gates on a quorum; bootstrap mode still gates on
+			// the full set, so route the mock to whichever the code under test calls.
+			redisRunningMethod := "IsRedisRunningQuorum"
+			sentinelRunningMethod := "IsSentinelRunningQuorum"
+			if bootstrappingTests {
+				redisRunningMethod = "IsRedisRunning"
+				sentinelRunningMethod = "IsSentinelRunning"
+			}
+
 			if test.redisCheckNumberOK {
-				mrfc.On("IsRedisRunning", rf).Once().Return(true)
+				mrfc.On(redisRunningMethod, rf).Once().Return(true)
 			} else {
 				continueTests = false
-				mrfc.On("IsRedisRunning", rf).Once().Return(false)
+				mrfc.On(redisRunningMethod, rf).Once().Return(false)
 			}
 
 			if allowSentinels {
-				mrfc.On("IsSentinelRunning", rf).Once().Return(true)
+				mrfc.On(sentinelRunningMethod, rf).Once().Return(true)
 			}
 
 			if bootstrappingTests && continueTests {
