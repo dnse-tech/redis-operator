@@ -5,6 +5,42 @@
 
 Redis Operator creates/configures/manages redis-failovers atop Kubernetes.
 
+## Table of Contents
+
+- [Requirements](#requirements)
+- [Operator deployment on Kubernetes](#operator-deployment-on-kubernetes)
+  - [Using the Helm chart](#using-the-helm-chart)
+  - [Using kubectl](#using-kubectl)
+  - [Using kustomize](#using-kustomize)
+- [Usage](#usage)
+  - [Reducing update churn (`--enable-hash`)](#reducing-update-churn---enable-hash)
+  - [Persistence](#persistence)
+  - [NodeAffinity and Tolerations](#nodeaffinity-and-tolerations)
+- [Topology Spread Contraints](#topology-spread-contraints)
+  - [Custom configurations](#custom-configurations)
+  - [Custom shutdown script](#custom-shutdown-script)
+  - [Custom SecurityContext](#custom-securitycontext)
+  - [Custom containerSecurityContext at container level](#custom-containersecuritycontext-at-container-level)
+  - [Custom command](#custom-command)
+  - [Custom Priority Class](#custom-priority-class)
+  - [Custom Service Account](#custom-service-account)
+  - [Custom Pod Annotations](#custom-pod-annotations)
+  - [Custom Service Annotations](#custom-service-annotations)
+  - [Pausing reconciliation](#pausing-reconciliation)
+  - [Control of label propagation](#control-of-label-propagation)
+  - [ExtraVolumes and ExtraVolumeMounts](#extravolumes-and-extravolumemounts)
+- [Connection to the created Redis Failovers](#connection-to-the-created-redis-failovers)
+  - [Enabling redis auth](#enabling-redis-auth)
+- [example config](#example-config)
+  - [Bootstrapping from pre-existing Redis Instance(s)](#bootstrapping-from-pre-existing-redis-instances)
+  - [Default versions](#default-versions)
+- [Cleanup](#cleanup)
+  - [Operator and CRD](#operator-and-crd)
+  - [Single Redis Failover](#single-redis-failover)
+- [Docker Images](#docker-images)
+  - [Redis Operator](#redis-operator-1)
+- [Documentation](#documentation)
+
 ## Requirements
 
 Kubernetes version: 1.21 or higher
