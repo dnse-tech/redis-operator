@@ -23,9 +23,9 @@ import (
 )
 
 const (
-	resync       = 30 * time.Second
-	operatorName = "redis-operator"
-	lockKey      = "redis-failover-lease"
+	defaultResync = 30 * time.Second
+	operatorName  = "redis-operator"
+	lockKey       = "redis-failover-lease"
 )
 
 // New will create an operator that is responsible of managing all the required stuff
@@ -39,6 +39,11 @@ func New(cfg Config, k8sService k8s.Services, k8sClient kubernetes.Interface, lo
 	// Create the handlers.
 	rfHandler := NewRedisFailoverHandler(cfg, rfService, rfChecker, rfHealer, k8sService, kooperMetricsRecorder, logger)
 	rfRetriever := NewRedisFailoverRetriever(cfg, k8sService)
+
+	resync := cfg.ResyncPeriod
+	if resync <= 0 {
+		resync = defaultResync
+	}
 
 	kooperLogger := kooperlogger{Logger: logger.WithField("operator", "redisfailover")}
 	// Leader election service.

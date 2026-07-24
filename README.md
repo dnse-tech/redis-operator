@@ -14,6 +14,7 @@ Redis Operator creates/configures/manages redis-failovers atop Kubernetes.
   - [Using kustomize](#using-kustomize)
 - [Usage](#usage)
   - [Reducing update churn (`--enable-hash`)](#reducing-update-churn---enable-hash)
+  - [Reconcile interval (`--resync-period`)](#reconcile-interval---resync-period)
   - [Persistence](#persistence)
   - [NodeAffinity and Tolerations](#nodeaffinity-and-tolerations)
 - [Topology Spread Contraints](#topology-spread-contraints)
@@ -165,6 +166,13 @@ write matches that hash.
 sync, because the operator's *desired* object is unchanged and so its hash still matches. You are
 trading the operator's self-healing of manual drift for far fewer API writes. The flag is **off by
 default**, so upgrading changes nothing until you opt in.
+
+### Reconcile interval (`--resync-period`)
+
+Beyond reacting to change events, the operator re-reconciles every `RedisFailover` on a fixed
+interval so it can recover from missed events and correct drift. This defaults to `30s` and can be
+tuned with `--resync-period` (any Go duration, e.g. `--resync-period=1m`). Larger values reduce API
+load at the cost of slower periodic healing; smaller values react faster but poll more often.
 
 ### Persistence
 

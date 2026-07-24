@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"path/filepath"
 	"regexp"
+	"time"
 
 	"github.com/dnse-tech/redis-operator/operator/redisfailover"
 	"k8s.io/client-go/util/homedir"
@@ -23,6 +24,7 @@ type CMDFlags struct {
 	Concurrency              int
 	LogLevel                 string
 	EnableObjectHashing      bool
+	ResyncPeriod             time.Duration
 }
 
 // Init initializes and parse the flags
@@ -43,6 +45,7 @@ func (c *CMDFlags) Init() {
 	// Off by default: skipping unchanged writes also stops the operator from
 	// correcting resources edited by hand, so opting in is a deliberate choice.
 	flag.BoolVar(&c.EnableObjectHashing, "enable-hash", false, "Skip updating owned resources when they already match the desired state")
+	flag.DurationVar(&c.ResyncPeriod, "resync-period", 30*time.Second, "How often every RedisFailover is re-reconciled even without a change event")
 	// Parse flags
 	flag.Parse()
 
@@ -58,5 +61,6 @@ func (c *CMDFlags) ToRedisOperatorConfig() redisfailover.Config {
 		MetricsPath:              c.MetricsPath,
 		Concurrency:              c.Concurrency,
 		SupportedNamespacesRegex: c.SupportedNamespacesRegex,
+		ResyncPeriod:             c.ResyncPeriod,
 	}
 }
