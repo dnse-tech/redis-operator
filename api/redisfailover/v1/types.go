@@ -77,6 +77,11 @@ type RedisSettings struct {
 	// PodDisruptionBudgetMinAvailable overrides the PodDisruptionBudget
 	// minAvailable for the redis pods. Defaults to 2 (or 1 when replicas <= 2).
 	PodDisruptionBudgetMinAvailable *intstr.IntOrString `json:"podDisruptionBudgetMinAvailable,omitempty"`
+	// PreventMasterEviction, when true, annotates the current master pod with
+	// cluster-autoscaler.kubernetes.io/safe-to-evict=false so the cluster
+	// autoscaler will not drain the node running the master. Slaves are marked
+	// evictable. Defaults to false.
+	PreventMasterEviction bool `json:"preventMasterEviction,omitempty"`
 }
 
 // SentinelSettings defines the specification of the sentinel cluster
