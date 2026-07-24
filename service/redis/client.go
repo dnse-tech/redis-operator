@@ -20,6 +20,7 @@ type Client interface {
 	GetNumberSentinelSlavesInMemory(ip string) (int32, error)
 	ResetSentinel(ip string) error
 	GetSlaveOf(ip, port, password string) (string, error)
+	GetReplicationOffset(ip, port, password string) (int64, error)
 	IsMaster(ip, port, password string) (bool, error)
 	MonitorRedis(ip, monitor, quorum, password string) error
 	MonitorRedisWithPort(ip, monitor, port, quorum, password string) error
@@ -49,6 +50,7 @@ const (
 	slaveNumberREString     = "slaves=([0-9]+)"
 	sentinelStatusREString  = "status=([a-z]+)"
 	redisMasterHostREString = "master_host:([0-9.]+)"
+	redisReplOffsetREString = "master_repl_offset:([0-9]+)"
 	redisRoleMaster         = "role:master"
 	redisSyncing            = "master_sync_in_progress:1"
 	redisMasterSillPending  = "master_host:127.0.0.1"
@@ -63,6 +65,7 @@ var (
 	sentinelStatusRE  = regexp.MustCompile(sentinelStatusREString)
 	slaveNumberRE     = regexp.MustCompile(slaveNumberREString)
 	redisMasterHostRE = regexp.MustCompile(redisMasterHostREString)
+	redisReplOffsetRE = regexp.MustCompile(redisReplOffsetREString)
 )
 
 // GetNumberSentinelsInMemory return the number of sentinels that the requested sentinel has
@@ -184,6 +187,37 @@ func (c *client) GetSlaveOf(ip, port, password string) (string, error) {
 	}
 	c.metricsRecorder.RecordRedisOperation(metrics.KIND_REDIS, ip, metrics.GET_SLAVE_OF, metrics.SUCCESS, metrics.NOT_APPLICABLE)
 	return match[1], nil
+}
+
+// GetReplicationOffset returns the redis master_repl_offset reported by the
+// instance's INFO replication. A higher offset means the instance has processed
+// more of the replication stream, so it is the most up-to-date candidate to
+// promote to master with the least data loss.
+func (c *client) GetReplicationOffset(ip, port, password string) (int64, error) {
+	options := &rediscli.Options{
+		Addr:     net.JoinHostPort(ip, port),
+		Password: password,
+		DB:       0,
+	}
+	rClient := rediscli.NewClient(options)
+	defer func() { _ = rClient.Close() }()
+	info, err := rClient.Info(context.TODO(), "replication").Result()
+	if err != nil {
+		c.metricsRecorder.RecordRedisOperation(metrics.KIND_REDIS, ip, metrics.GET_REPLICATION_OFFSET, metrics.FAIL, getRedisError(err))
+		return 0, err
+	}
+	match := redisReplOffsetRE.FindStringSubmatch(info)
+	if len(match) == 0 {
+		c.metricsRecorder.RecordRedisOperation(metrics.KIND_REDIS, ip, metrics.GET_REPLICATION_OFFSET, metrics.SUCCESS, metrics.NOT_APPLICABLE)
+		return 0, nil
+	}
+	offset, err := strconv.ParseInt(match[1], 10, 64)
+	if err != nil {
+		c.metricsRecorder.RecordRedisOperation(metrics.KIND_REDIS, ip, metrics.GET_REPLICATION_OFFSET, metrics.FAIL, getRedisError(err))
+		return 0, err
+	}
+	c.metricsRecorder.RecordRedisOperation(metrics.KIND_REDIS, ip, metrics.GET_REPLICATION_OFFSET, metrics.SUCCESS, metrics.NOT_APPLICABLE)
+	return offset, nil
 }
 
 func (c *client) IsMaster(ip, port, password string) (bool, error) {
