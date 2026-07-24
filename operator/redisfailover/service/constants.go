@@ -34,3 +34,7 @@ const (
 	redisRoleLabelMaster = "master"
 	redisRoleLabelSlave  = "slave"
 )
+
+// masterSafeToEvictAnnotation is the cluster-autoscaler annotation used to keep
+// the node running the redis master from being drained during scale-down.
+const masterSafeToEvictAnnotation = "cluster-autoscaler.kubernetes.io/safe-to-evict"

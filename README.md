@@ -15,6 +15,7 @@ Redis Operator creates/configures/manages redis-failovers atop Kubernetes.
 - [Usage](#usage)
   - [Reducing update churn (`--enable-hash`)](#reducing-update-churn---enable-hash)
   - [Reconcile interval (`--resync-period`)](#reconcile-interval---resync-period)
+  - [Protect the master from cluster-autoscaler eviction](#protect-the-master-from-cluster-autoscaler-eviction)
   - [Sentinel update strategy and PodDisruptionBudget](#sentinel-update-strategy-and-poddisruptionbudget)
   - [Persistence](#persistence)
   - [NodeAffinity and Tolerations](#nodeaffinity-and-tolerations)
@@ -175,6 +176,13 @@ Beyond reacting to change events, the operator re-reconciles every `RedisFailove
 interval so it can recover from missed events and correct drift. This defaults to `30s` and can be
 tuned with `--resync-period` (any Go duration, e.g. `--resync-period=1m`). Larger values reduce API
 load at the cost of slower periodic healing; smaller values react faster but poll more often.
+
+### Protect the master from cluster-autoscaler eviction
+
+Setting `redis.preventMasterEviction: true` makes the operator annotate the current master pod with
+`cluster-autoscaler.kubernetes.io/safe-to-evict: "false"` (and mark slaves `"true"`), so the
+cluster-autoscaler will not drain the node running the master and trigger an avoidable failover. The
+annotation follows the master as it moves. Defaults to `false` (no annotation is managed).
 
 ### Sentinel update strategy and PodDisruptionBudget
 
