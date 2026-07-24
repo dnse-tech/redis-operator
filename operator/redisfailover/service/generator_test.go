@@ -1088,10 +1088,17 @@ func TestSentinelServiceExporterPort(t *testing.T) {
 		TargetPort: intstr.FromInt(9355),
 		Protocol:   corev1.ProtocolTCP,
 	}
+	customMetricsPort := corev1.ServicePort{
+		Name:       "metrics",
+		Port:       19355,
+		TargetPort: intstr.FromInt(19355),
+		Protocol:   corev1.ProtocolTCP,
+	}
 
 	tests := []struct {
 		name            string
 		exporterEnabled bool
+		exporterPort    int32
 		expectedPorts   []corev1.ServicePort
 	}{
 		{
@@ -1104,6 +1111,12 @@ func TestSentinelServiceExporterPort(t *testing.T) {
 			exporterEnabled: true,
 			expectedPorts:   []corev1.ServicePort{sentinelPort, metricsPort},
 		},
+		{
+			name:            "exporter port override is honoured",
+			exporterEnabled: true,
+			exporterPort:    19355,
+			expectedPorts:   []corev1.ServicePort{sentinelPort, customMetricsPort},
+		},
 	}
 
 	for _, test := range tests {
@@ -1112,6 +1125,7 @@ func TestSentinelServiceExporterPort(t *testing.T) {
 
 			rf := generateRF()
 			rf.Spec.Sentinel.Exporter.Enabled = test.exporterEnabled
+			rf.Spec.Sentinel.Exporter.Port = test.exporterPort
 
 			generatedService := corev1.Service{}
 
