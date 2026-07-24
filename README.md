@@ -24,6 +24,7 @@ Redis Operator creates/configures/manages redis-failovers atop Kubernetes.
   - [Custom SecurityContext](#custom-securitycontext)
   - [Custom containerSecurityContext at container level](#custom-containersecuritycontext-at-container-level)
   - [Custom command](#custom-command)
+  - [Custom environment variables](#custom-environment-variables)
   - [Custom Priority Class](#custom-priority-class)
   - [Custom Service Account](#custom-service-account)
   - [Custom Pod Annotations](#custom-pod-annotations)
@@ -256,6 +257,13 @@ By default, redis and sentinel will be called with the basic command, giving the
 - Sentinel: `redis-server /redis/sentinel.conf --sentinel`
 
 If necessary, this command can be changed with the `command` option inside redis/sentinel spec. An example can be found in the [custom command example file](example/redisfailover/custom-command.yaml).
+
+### Custom environment variables
+
+Extra environment variables can be injected into the redis and sentinel **main** containers via
+`redis.env` / `sentinel.env` (standard Kubernetes `EnvVar` entries). The operator's own variables
+(`REDIS_ADDR`, `REDIS_PORT`, `REDIS_USER`, `REDIS_PASSWORD`) always take precedence, so a
+user-supplied variable that reuses one of those names cannot override it.
 
 ### Custom Priority Class
 In order to use a custom Kubernetes [Priority Class](https://kubernetes.io/docs/concepts/configuration/pod-priority-preemption/#priorityclass) for Redis and/or Sentinel pods, you can set the `priorityClassName` in the redis/sentinel spec, this attribute has no default and depends on the specific cluster configuration. **Note:** the operator doesn't create the referenced `Priority Class` resource.
