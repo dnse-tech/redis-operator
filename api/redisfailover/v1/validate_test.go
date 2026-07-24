@@ -7,6 +7,93 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+func TestValidateCustomCommandRenames(t *testing.T) {
+	tests := []struct {
+		name          string
+		renames       []RedisCommandRename
+		expectedError string
+	}{
+		{
+			name:    "no renames",
+			renames: nil,
+		},
+		{
+			name:    "plain command rename",
+			renames: []RedisCommandRename{{From: "CONFIG", To: "CONFIG2"}},
+		},
+		{
+			name:    "renaming to an opaque secret",
+			renames: []RedisCommandRename{{From: "FLUSHALL", To: "b840fc02d524045429941cc15f59e41cb7be6c52"}},
+		},
+		{
+			name:    "empty replacement disables the command",
+			renames: []RedisCommandRename{{From: "CONFIG", To: ""}},
+		},
+		{
+			name:          "empty command name",
+			renames:       []RedisCommandRename{{From: "", To: "CONFIG2"}},
+			expectedError: `customCommandRenames: "" is not a valid command name`,
+		},
+		{
+			// The proof of concept from the upstream report: the quote closes
+			// the rename-command directive so the rest is parsed as config.
+			name: "quote in the command name injects directives",
+			renames: []RedisCommandRename{{
+				From: "CONFIG\"\nslave-read-only no\nrename-command \"FLUSHALL",
+				To:   `""`,
+			}},
+			expectedError: "is not a valid command name",
+		},
+		{
+			name:          "quote in the replacement",
+			renames:       []RedisCommandRename{{From: "CONFIG", To: `a" "b`}},
+			expectedError: "is not a valid replacement for command",
+		},
+		{
+			name:          "newline in the replacement",
+			renames:       []RedisCommandRename{{From: "CONFIG", To: "a\nmaxmemory 1"}},
+			expectedError: "is not a valid replacement for command",
+		},
+		{
+			name:          "space in the replacement",
+			renames:       []RedisCommandRename{{From: "CONFIG", To: "a b"}},
+			expectedError: "is not a valid replacement for command",
+		},
+		{
+			name:          "command name starting with a digit",
+			renames:       []RedisCommandRename{{From: "1CONFIG", To: "x"}},
+			expectedError: "is not a valid command name",
+		},
+		{
+			name:          "later entry is validated too",
+			renames:       []RedisCommandRename{{From: "CONFIG", To: "safe"}, {From: `BAD" "x`, To: "y"}},
+			expectedError: "is not a valid command name",
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			assert := assert.New(t)
+
+			rf := &RedisFailover{
+				ObjectMeta: metav1.ObjectMeta{Name: "test"},
+				Spec: RedisFailoverSpec{
+					Redis: RedisSettings{CustomCommandRenames: test.renames},
+				},
+			}
+
+			err := rf.Validate()
+
+			if test.expectedError == "" {
+				assert.NoError(err)
+			} else {
+				assert.Error(err)
+				assert.Contains(err.Error(), test.expectedError)
+			}
+		})
+	}
+}
+
 func TestValidate(t *testing.T) {
 	tests := []struct {
 		name                   string
