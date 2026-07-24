@@ -22,6 +22,7 @@ type CMDFlags struct {
 	K8sQueriesBurstable      int
 	Concurrency              int
 	LogLevel                 string
+	EnableObjectHashing      bool
 }
 
 // Init initializes and parse the flags
@@ -39,6 +40,9 @@ func (c *CMDFlags) Init() {
 	// reference: https://github.com/spotahome/kooper/blob/master/controller/controller.go#L89
 	flag.IntVar(&c.Concurrency, "concurrency", 3, "Number of conccurent workers meant to process events")
 	flag.StringVar(&c.LogLevel, "log-level", "info", "set log level")
+	// Off by default: skipping unchanged writes also stops the operator from
+	// correcting resources edited by hand, so opting in is a deliberate choice.
+	flag.BoolVar(&c.EnableObjectHashing, "enable-hash", false, "Skip updating owned resources when they already match the desired state")
 	// Parse flags
 	flag.Parse()
 

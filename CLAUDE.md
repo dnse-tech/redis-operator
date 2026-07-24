@@ -59,7 +59,11 @@ Per `RedisFailover` event, `handler.go` runs two phases (see `docs/logic.md`):
 
 1. **Ensure** — idempotently create/update every owned resource: redis
    configmap + shutdown configmap + statefulset, sentinel configmap + deployment +
-   services, PDBs, RBAC. Manual edits to these are overwritten on next sync.
+   services, PDBs, RBAC. Manual edits to these are overwritten on next sync — unless
+   the operator is started with `--enable-hash`, which skips the update when the desired
+   object matches the hash annotation it last applied (so hand edits are then *not*
+   corrected until the desired spec changes). The hashing helper lives in
+   `service/k8s/resource_hash.go`.
 2. **CheckAndHeal** — connect to each redis and sentinel; enforce exactly one
    master, all replicas following it, all sentinels monitoring the same master,
    correct replica counts, and custom config applied live via `CONFIG SET` /
