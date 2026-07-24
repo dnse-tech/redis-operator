@@ -87,5 +87,9 @@ tolerations: []
 
 affinity: {}
 
+# Pod [topology spread constraints](https://kubernetes.io/docs/concepts/scheduling-eviction/topology-spread-constraints/)
+# for the operator pod, e.g. to spread replicas across zones.
+topologySpreadConstraints: []
+
 priorityClassName: ""
 
