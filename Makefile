@@ -198,8 +198,10 @@ update-codegen:
 	--go-gen-out ./client/k8s
 
 # Generate the CRD manifest, mirror it into the kustomize base, and sync the
-# Helm chart CRD from it — re-injecting the .Values.crds.annotations templating
-# block that codegen output can't carry (otherwise the chart CRD drifts stale).
+# Helm chart CRD from it. Helm applies files under crds/ verbatim instead of
+# rendering them, so the chart copy has to stay plain YAML: injecting template
+# directives here produced a CRD that no longer parsed and broke every fresh
+# install.
 .PHONY: generate-crd
 generate-crd:
 	@echo ">> Generating CRD manifest..."
@@ -210,5 +212,4 @@ generate-crd:
 	--apis-in ./api \
 	--crd-gen-out ./manifests
 	cp -f manifests/$(CRD_FILE) manifests/kustomize/base/$(CRD_FILE)
-	awk '/^  annotations:$$/ && !done { print; print "    {{- with .Values.crds.annotations }}"; print "    {{- toYaml . | nindent 4 }}"; print "    {{- end }}"; done=1; next } { print }' \
-	manifests/$(CRD_FILE) > charts/redisoperator/crds/$(CRD_FILE)
+	cp -f manifests/$(CRD_FILE) charts/redisoperator/crds/$(CRD_FILE)

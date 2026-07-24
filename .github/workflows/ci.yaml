@@ -15,6 +15,7 @@ on:
       - '.golangci.yml'
       - 'Makefile'
       - 'manifests/**'
+      - 'charts/redisoperator/crds/**'
       - 'mocks/**'
       - 'test/**'
       - 'docker/**'
@@ -28,6 +29,7 @@ on:
       - '.golangci.yml'
       - 'Makefile'
       - 'manifests/**'
+      - 'charts/redisoperator/crds/**'
       - 'mocks/**'
       - 'test/**'
       - 'docker/**'
@@ -94,6 +96,27 @@ jobs:
       - name: Add redisfailover CRD
         run: kubectl create -f manifests/databases.spotahome.com_redisfailovers.yaml
       - run: make ci-integration-test
+
+  verify-generated:
+    name: Verify generated files
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+      # Both targets run the pinned codegen image in docker, so no local Go
+      # toolchain is needed here.
+      - name: Regenerate client, deepcopy and CRD
+        run: |
+          make update-codegen
+          make generate-crd
+      - name: Fail if the committed output is stale
+        run: |
+          if [ -n "$(git status --porcelain)" ]; then
+            echo "::error::Generated files are out of date. Run 'make update-codegen' and 'make generate-crd', then commit the result."
+            git status --porcelain
+            git --no-pager diff
+            exit 1
+          fi
+          echo "Generated files are up to date."
 
   govulncheck:
     name: govulncheck
