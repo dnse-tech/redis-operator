@@ -1,9 +1,14 @@
 name: Release Charts
 
+# chart-releaser only publishes when a chart's version changes, so limit the
+# trigger to chart sources instead of running it on every push to master.
 on:
   push:
     branches:
       - master
+    paths:
+      - 'charts/**'
+      - '.github/workflows/helm.yml'
 
 jobs:
   release:
