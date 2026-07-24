@@ -91,7 +91,21 @@ func (r *RedisFailoverHealer) MakeMaster(ip string, rf *redisfailoverv1.RedisFai
 	return nil
 }
 
-// SetOldestAsMaster puts all redis to the same master, choosen by order of appearance
+// replicationOffsetOrNegative returns the pod's redis replication offset, or -1
+// when it can't be read (e.g. the pod is unreachable) so such a pod sorts last
+// and is never preferred as the new master.
+func (r *RedisFailoverHealer) replicationOffsetOrNegative(ip, port, password string) int64 {
+	offset, err := r.redisClient.GetReplicationOffset(ip, port, password)
+	if err != nil {
+		return -1
+	}
+	return offset
+}
+
+// SetOldestAsMaster elects a new master and points every other redis at it. The
+// candidate with the highest replication offset wins (it has the most data, so
+// promoting it loses the least), falling back to the oldest pod as a
+// deterministic tie-breaker and when offsets can't be read.
 func (r *RedisFailoverHealer) SetOldestAsMaster(rf *redisfailoverv1.RedisFailover) error {
 	ssp, err := r.k8sService.GetStatefulSetPods(rf.Namespace, GetRedisName(rf))
 	if err != nil {
@@ -101,17 +115,27 @@ func (r *RedisFailoverHealer) SetOldestAsMaster(rf *redisfailoverv1.RedisFailove
 		return errors.New("number of redis pods are 0")
 	}
 
-	// Order the pods so we start by the oldest one
-	sort.Slice(ssp.Items, func(i, j int) bool {
-		return ssp.Items[i].CreationTimestamp.Before(&ssp.Items[j].CreationTimestamp)
-	})
-
 	password, err := k8s.GetRedisPassword(r.k8sService, rf)
 	if err != nil {
 		return err
 	}
 
 	port := getRedisPort(rf.Spec.Redis.Port)
+
+	// Prefer the most up-to-date replica (highest replication offset). Compute
+	// each offset once, then order by offset desc, oldest pod as tie-breaker.
+	offsets := make(map[string]int64, len(ssp.Items))
+	for _, pod := range ssp.Items {
+		offsets[pod.Status.PodIP] = r.replicationOffsetOrNegative(pod.Status.PodIP, port, password)
+	}
+	sort.SliceStable(ssp.Items, func(i, j int) bool {
+		oi, oj := offsets[ssp.Items[i].Status.PodIP], offsets[ssp.Items[j].Status.PodIP]
+		if oi != oj {
+			return oi > oj
+		}
+		return ssp.Items[i].CreationTimestamp.Before(&ssp.Items[j].CreationTimestamp)
+	})
+
 	newMasterIP := ""
 	for _, pod := range ssp.Items {
 		if newMasterIP == "" {
