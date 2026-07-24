@@ -226,12 +226,16 @@ check-and-heal pass for that failover, so nothing repairs a broken master or rep
 reconciliation is resumed. Other `RedisFailover` resources are unaffected.
 
 ### Control of label propagation.
-By default the operator will propagate all labels on the CRD down to the resources that it creates.  This can be problematic if the
-labels on the CRD are not fully under your own control (for example: being deployed by a gitops operator)
-as a change to a labels value can fail on immutable resources such as PodDisruptionBudgets.  To control what labels the operator propagates
-to resource is creates you can modify the labelWhitelist option in the spec.
+By default the operator does **not** propagate the labels on the CRD down to the resources that it creates. To opt in to
+propagating a subset of them, list matching regular expressions in the `labelWhitelist` option in the spec.
 
-By default specifying no whitelist or an empty whitelist will cause all labels to still be copied as not to break backwards compatibility.
+Propagating labels blindly can be problematic when the labels on the CRD are not fully under your own control (for example:
+being deployed by a gitops operator): a change to a label value can fail on immutable resources such as
+PodDisruptionBudgets, and an `applyset.kubernetes.io/*` label reaching the operator's own resources can make
+`kubectl apply --prune`/ApplySet delete them out from under the operator.
+
+> **Note:** Older releases propagated *all* CRD labels when the whitelist was empty. That default was reversed to avoid the
+> pruning hazard above. If you relied on the old behaviour, add a catch-all such as `.*` to `labelWhitelist`.
 
 Items in the array should be regular expressions, see [here](example/redisfailover/control-label-propagation.yaml) as an example of how they can be used and
 [here](https://github.com/google/re2/wiki/Syntax) for a syntax reference.

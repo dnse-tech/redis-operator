@@ -112,24 +112,23 @@ func (r *RedisFailoverHandler) getLabels(rf *redisfailoverv1.RedisFailover) map[
 		rfLabelNameKey: rf.Name,
 	}
 
-	// Filter the labels based on the whitelist
+	// Only propagate the RedisFailover's own labels onto owned resources when the
+	// user opts in via LabelWhitelist. Propagating every CR label by default lets a
+	// GitOps applyset label (applyset.kubernetes.io/...) reach the operator's own
+	// resources, which then makes `kubectl apply --prune`/ApplySet treat them as
+	// pruning candidates and delete them out from under the operator.
 	filteredCustomLabels := make(map[string]string)
-	if len(rf.Spec.LabelWhitelist) != 0 {
-		for _, regex := range rf.Spec.LabelWhitelist {
-			compiledRegexp, err := regexp.Compile(regex)
-			if err != nil {
-				r.logger.Errorf("Unable to compile label whitelist regex '%s', ignoring it.", regex)
-				continue
-			}
-			for labelKey, labelValue := range rf.Labels {
-				if match := compiledRegexp.MatchString(labelKey); match {
-					filteredCustomLabels[labelKey] = labelValue
-				}
+	for _, regex := range rf.Spec.LabelWhitelist {
+		compiledRegexp, err := regexp.Compile(regex)
+		if err != nil {
+			r.logger.Errorf("Unable to compile label whitelist regex '%s', ignoring it.", regex)
+			continue
+		}
+		for labelKey, labelValue := range rf.Labels {
+			if match := compiledRegexp.MatchString(labelKey); match {
+				filteredCustomLabels[labelKey] = labelValue
 			}
 		}
-	} else {
-		// If no whitelist is specified then don't filter the labels.
-		filteredCustomLabels = rf.Labels
 	}
 	return util.MergeLabels(defaultLabels, dynLabels, filteredCustomLabels)
 }
