@@ -43,6 +43,11 @@ PROJECT_PACKAGE := github.com/dnse-tech/redis-operator
 # kube-code-generator v0.8.0 (k8s 1.34 / bundled code-generator v1.34), digest-pinned.
 # amd64-only image; --platform linux/amd64 lets it run on arm64 hosts too.
 CODEGEN_IMAGE := ghcr.io/slok/kube-code-generator@sha256:0b7a150d0935ac794f505ed563771a6df024fd77fa1ea96b344a7d43e463476d
+# Extra docker flags for the codegen image. It runs as its own uid 1000 "app"
+# user, which cannot write into a bind mount owned by a different uid. Docker
+# Desktop hides this, but on Linux (notably CI) the generator fails with
+# "permission denied", so those callers pass --user 0:0 and fix ownership after.
+CODEGEN_DOCKER_FLAGS ?=
 CRD_FILE := databases.spotahome.com_redisfailovers.yaml
 PORT := 9710
 
@@ -191,6 +196,7 @@ update-codegen:
 	@echo ">> Generating deepcopy + typed client..."
 	rm -rf ./client/k8s
 	docker run --rm --platform linux/amd64 \
+	$(CODEGEN_DOCKER_FLAGS) \
 	-e GOTOOLCHAIN=auto \
 	-v $(PWD):/app \
 	$(CODEGEN_IMAGE) \
@@ -206,6 +212,7 @@ update-codegen:
 generate-crd:
 	@echo ">> Generating CRD manifest..."
 	docker run --rm --platform linux/amd64 \
+	$(CODEGEN_DOCKER_FLAGS) \
 	-e GOTOOLCHAIN=auto \
 	-v $(PWD):/app \
 	$(CODEGEN_IMAGE) \

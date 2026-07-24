@@ -103,11 +103,14 @@ jobs:
     steps:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
       # Both targets run the pinned codegen image in docker, so no local Go
-      # toolchain is needed here.
+      # toolchain is needed here. The image runs as its own uid 1000 user and
+      # cannot write into the runner's workspace, so it runs as root and the
+      # output is handed back to the runner afterwards.
       - name: Regenerate client, deepcopy and CRD
         run: |
-          make update-codegen
-          make generate-crd
+          make update-codegen CODEGEN_DOCKER_FLAGS="--user 0:0"
+          make generate-crd CODEGEN_DOCKER_FLAGS="--user 0:0"
+          sudo chown -R "$(id -u):$(id -g)" client/k8s manifests charts/redisoperator/crds api
       - name: Fail if the committed output is stale
         run: |
           if [ -n "$(git status --porcelain)" ]; then
