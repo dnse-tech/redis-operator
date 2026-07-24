@@ -15,6 +15,7 @@ Redis Operator creates/configures/manages redis-failovers atop Kubernetes.
 - [Usage](#usage)
   - [Reducing update churn (`--enable-hash`)](#reducing-update-churn---enable-hash)
   - [Reconcile interval (`--resync-period`)](#reconcile-interval---resync-period)
+  - [Sentinel update strategy and PodDisruptionBudget](#sentinel-update-strategy-and-poddisruptionbudget)
   - [Persistence](#persistence)
   - [NodeAffinity and Tolerations](#nodeaffinity-and-tolerations)
 - [Topology Spread Contraints](#topology-spread-contraints)
@@ -173,6 +174,26 @@ Beyond reacting to change events, the operator re-reconciles every `RedisFailove
 interval so it can recover from missed events and correct drift. This defaults to `30s` and can be
 tuned with `--resync-period` (any Go duration, e.g. `--resync-period=1m`). Larger values reduce API
 load at the cost of slower periodic healing; smaller values react faster but poll more often.
+
+### Sentinel update strategy and PodDisruptionBudget
+
+The sentinel `Deployment` update strategy can be overridden via `sentinel.strategy` (e.g. to set
+`rollingUpdate.maxSurge`/`maxUnavailable`). This helps when required anti-affinity plus
+`replicas == nodes` would otherwise deadlock the default rolling update:
+
+```yaml
+spec:
+  sentinel:
+    strategy:
+      type: RollingUpdate
+      rollingUpdate:
+        maxSurge: 1
+        maxUnavailable: 0
+```
+
+The `PodDisruptionBudget` `minAvailable` for each component defaults to `2` (or `1` when redis
+`replicas <= 2`). Override it per component with `redis.podDisruptionBudgetMinAvailable` /
+`sentinel.podDisruptionBudgetMinAvailable` (an integer or percentage string such as `"60%"`).
 
 ### Persistence
 

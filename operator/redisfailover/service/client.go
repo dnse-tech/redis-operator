@@ -86,7 +86,7 @@ func (r *RedisFailoverKubeClient) EnsureSentinelConfigMap(rf *redisfailoverv1.Re
 // EnsureSentinelDeployment makes sure the sentinel deployment exists in the desired state
 func (r *RedisFailoverKubeClient) EnsureSentinelDeployment(rf *redisfailoverv1.RedisFailover, labels map[string]string, ownerRefs []metav1.OwnerReference) error {
 	if !rf.Spec.Sentinel.DisablePodDisruptionBudget {
-		if err := r.ensurePodDisruptionBudget(rf, sentinelName, sentinelRoleName, labels, ownerRefs); err != nil {
+		if err := r.ensurePodDisruptionBudget(rf, sentinelName, sentinelRoleName, rf.Spec.Sentinel.PodDisruptionBudgetMinAvailable, labels, ownerRefs); err != nil {
 			return err
 		}
 	}
@@ -100,7 +100,7 @@ func (r *RedisFailoverKubeClient) EnsureSentinelDeployment(rf *redisfailoverv1.R
 // EnsureRedisStatefulset makes sure the redis statefulset exists in the desired state
 func (r *RedisFailoverKubeClient) EnsureRedisStatefulset(rf *redisfailoverv1.RedisFailover, labels map[string]string, ownerRefs []metav1.OwnerReference) error {
 	if !rf.Spec.Redis.DisablePodDisruptionBudget {
-		if err := r.ensurePodDisruptionBudget(rf, redisName, redisRoleName, labels, ownerRefs); err != nil {
+		if err := r.ensurePodDisruptionBudget(rf, redisName, redisRoleName, rf.Spec.Redis.PodDisruptionBudgetMinAvailable, labels, ownerRefs); err != nil {
 			return err
 		}
 	}
@@ -188,13 +188,16 @@ func (r *RedisFailoverKubeClient) EnsureRedisSlaveService(rf *redisfailoverv1.Re
 }
 
 // EnsureRedisStatefulset makes sure the pdb exists in the desired state
-func (r *RedisFailoverKubeClient) ensurePodDisruptionBudget(rf *redisfailoverv1.RedisFailover, name string, component string, labels map[string]string, ownerRefs []metav1.OwnerReference) error {
+func (r *RedisFailoverKubeClient) ensurePodDisruptionBudget(rf *redisfailoverv1.RedisFailover, name string, component string, minAvailableOverride *intstr.IntOrString, labels map[string]string, ownerRefs []metav1.OwnerReference) error {
 	name = generateName(name, rf.Name)
 	namespace := rf.Namespace
 
 	minAvailable := intstr.FromInt(2)
 	if rf.Spec.Redis.Replicas <= 2 {
 		minAvailable = intstr.FromInt(1)
+	}
+	if minAvailableOverride != nil {
+		minAvailable = *minAvailableOverride
 	}
 
 	labels = util.MergeLabels(labels, generateSelectorLabels(component, rf.Name))
